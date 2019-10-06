@@ -80,6 +80,7 @@ signal counter_d: std_logic_vector (1 downto 0);
 --reg [01:0] counter_d;
 signal counter: std_logic_vector (4 downto 0);
 signal tx_data_d: std_logic_vector (15 downto 0);
+signal i_counter: std_logic_Vector (3 downto 0);
 begin
 
 process (CLK,CPU_RESET)

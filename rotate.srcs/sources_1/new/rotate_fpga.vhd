@@ -21,6 +21,7 @@ signal b: std_logic_vector(31 downto 0);
 signal c: std_logic_vector(63 downto 0);
 signal  o_rx_out: std_logic_vector(7 downto 0);
 signal   tx_data: std_logic_vector(7 downto 0);
+signal   tx_data2: std_logic_vector(7 downto 0);
 signal o_frame_error: std_logic;
 signal uart_busy: std_logic;
 signal uart_busy_d: std_logic;
@@ -37,14 +38,16 @@ signal tx_counter: std_logic_vector(2 downto 0);
 signal tx_start: std_logic;
 signal delay_counter: std_logic_vector(15 downto 0);
 
+signal i_counter: std_logic_vector (3 downto 0);
 signal a_d: std_logic_vector(31 downto 0);
 signal b_d: std_logic_vector(31 downto 0);
 
-component right port(
+component Simple_One port(
     din1: in std_logic_vector(31 downto 0);
     din2: in std_logic_vector(31 downto 0);
     clr1: in std_logic;
     clk1: in std_logic;
+    i_cnt: inout std_logic_vector (3 downto 0);
     dout: out std_logic_vector(63 downto 0)
     );
 end component;
@@ -99,6 +102,19 @@ u_uart_wrapper: uart_wrapper2 port map(
     I_TX_START    => tx_vld,
     O_BUSY2        => uart_busy     
     );
+
+--PROCESS(SW0, BTNL) 
+--BEGIN
+-- IF(SW0='1') THEN 
+--   i_counter<="0000";
+--ELSIF(BTNL='1') THEN
+--     IF(i_counter="1100") THEN
+--      i_counter<="1100";
+--     ELSE
+--      i_counter<=i_counter+'1';
+--    END IF;
+--  END IF;
+--END PROCESS;
 
 with rx_counter select
 a <= o_rx_out & a(23 downto 0) when "000",
@@ -181,18 +197,61 @@ if(rising_edge(CLK100MHZ)) then
    end if;
 end process;
 
-with tx_counter select
-tx_data <= c(63 downto 56) when "000",
-  c(55 downto 48) when "001",
-  c(47 downto 40) when "010",
-  c(39 downto 32) when "011",
-  c(31 downto 24) when "100",
-  c(23 downto 16) when "101",
-  c(15 downto 08) when "110",
-  c(07 downto 00) when "111",
-  c(63 downto 56) when others;
-
-
+--with tx_counter select
+--tx_data <= c(63 downto 56) when "000",
+--  c(55 downto 48) when "001",
+--  c(47 downto 40) when "010",
+--  c(39 downto 32) when "011",
+--  c(31 downto 24) when "100",
+--  c(23 downto 16) when "101",
+--  c(15 downto 08) when "110",
+--  c(07 downto 00) when "111",
+--  c(63 downto 56) when others;
+Process (i_counter,SW0)
+begin
+if i_counter ="1100" then
+if tx_counter = "000" then
+tx_data <= "00000000";
+elsif tx_counter = "001" then
+tx_data <= "00000000";
+elsif tx_counter = "010" then
+tx_data <= "00000000";
+elsif tx_counter = "011" then
+tx_data <= "00000000";
+elsif tx_counter = "100" then
+tx_data <= "00000000";
+elsif tx_counter = "101" then
+tx_data <= "00000000";
+elsif tx_counter = "110" then
+tx_data <= "00000000";
+elsif tx_counter = "111" then
+tx_data <= "00000000";
+else 
+tx_data <= "00000000";
+end if;
+else
+if tx_counter = "000" then
+tx_data <= c(63 downto 56);
+elsif tx_counter = "001" then
+tx_data <= c(55 downto 48);
+elsif tx_counter = "010" then
+tx_data <= c(47 downto 40);
+elsif tx_counter = "011" then
+tx_data <= c(39 downto 32);
+elsif tx_counter = "100" then
+tx_data <= c(31 downto 24);
+elsif tx_counter = "101" then
+tx_data <= c(23 downto 16);
+elsif tx_counter = "110" then
+tx_data <= c(15 downto 8);
+elsif tx_counter = "111" then
+tx_data <= c(7 downto 0);
+else 
+tx_data <= c(63 downto 56);
+end if;
+end if;
+end process;
+--c <= X"0000000000000000" when i_counter ="1100" and SW0 = '0' else c;
 PROCESS(CLK100MHZ,BTNC) begin
 if(rising_edge(CLK100MHZ)) then
    if(BTNC = '1') then 
@@ -203,10 +262,11 @@ if(rising_edge(CLK100MHZ)) then
    end if;
 end process;
 
-I_AM_THE_COOLEST: right port map(
+I_AM_THE_COOLEST: Simple_One port map(
     din1    =>  b_d,
     din2 => a_d ,
     clr1 => SW0,
+    i_cnt => i_counter,
     clk1 => BTNL,
     dout =>  c
 );
