@@ -47,7 +47,7 @@ component Simple_One port(
     din2: in std_logic_vector(31 downto 0);
     clr1: in std_logic;
     clk1: in std_logic;
-    i_cnt: inout std_logic_vector (3 downto 0);
+    --i_cnt: inout std_logic_vector (3 downto 0);
     dout: out std_logic_vector(63 downto 0)
     );
 end component;
@@ -103,18 +103,18 @@ u_uart_wrapper: uart_wrapper2 port map(
     O_BUSY2        => uart_busy     
     );
 
---PROCESS(SW0, BTNL) 
---BEGIN
--- IF(SW0='1') THEN 
---   i_counter<="0000";
---ELSIF(BTNL='1') THEN
---     IF(i_counter="1100") THEN
---      i_counter<="1100";
---     ELSE
---      i_counter<=i_counter+'1';
---    END IF;
---  END IF;
---END PROCESS;
+PROCESS(SW0,BTNL) 
+BEGIN
+ IF(SW0='1') THEN 
+   i_counter<="0000";
+ELSIF(BTNL'EVENT AND BTNL='1') THEN
+     IF(i_counter="1101") THEN
+      i_counter<="1101";
+     ELSE
+      i_counter<=i_counter+'1';
+    END IF;
+  END IF;
+END PROCESS;
 
 with rx_counter select
 a <= o_rx_out & a(23 downto 0) when "000",
@@ -209,7 +209,7 @@ end process;
 --  c(63 downto 56) when others;
 Process (i_counter,SW0)
 begin
-if i_counter ="1100" then
+if i_counter ="1101" then
 if tx_counter = "000" then
 tx_data <= "00000000";
 elsif tx_counter = "001" then
@@ -266,7 +266,7 @@ I_AM_THE_COOLEST: Simple_One port map(
     din1    =>  b_d,
     din2 => a_d ,
     clr1 => SW0,
-    i_cnt => i_counter,
+    --i_cnt => i_counter,
     clk1 => BTNL,
     dout =>  c
 );
