@@ -3,6 +3,8 @@
 This is the working code for simple function of RC5 Encryption.. The first 2 lines have not been added.
 You will not be able to implement the code on FPGA without the supporting constraint files. This code is also not compatible with the given UART Module.
 
+YOU DO NOT HAVE TO RUN THE UART FOR THIS LAB.  
+
 EDIT - The code is now compatible for running with UART.
 
 HOW TO RUN ON UART
