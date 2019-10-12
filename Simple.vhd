@@ -31,35 +31,39 @@ USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity RC5 is
+entity Simple_One is
 --  Port ( );
 PORT  (
-  clr: IN STD_LOGIC;  -- asynchronous reset
+  clr1: IN STD_LOGIC;  -- asynchronous reset
 
-  clk: IN STD_LOGIC;  -- Clock signal
+  clk1: IN STD_LOGIC;  -- Clock signal
  --BTNU: IN STD_LOGIC;
  --BTNL: IN STD_LOGIC;
  --BTNR: IN STD_LOGIC;
  --BTND: IN STD_LOGIC;
  --TN: IN STD_LOGIC;
  -- din: IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-  dinFINAL: IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-  --din2: IN STD_LOGIC_VECTOR(14 DOWNTO 0);
+  din1: IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+  din2:IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+  
+  di_vld	: IN	STD_LOGIC;  -- handshake signal input is valid
   --din3: IN STD_LOGIC_VECTOR(14 DOWNTO 0);
  -- din4: IN STD_LOGIC_VECTOR(14 DOWNTO 0); 
   --din5: IN STD_LOGIC_VECTOR(3 DOWNTO 0);   --64-bit input
-  dout: OUT STD_LOGIC_VECTOR(63 DOWNTO 0) --64-bit output
+  dout: OUT STD_LOGIC_VECTOR(63 DOWNTO 0); --64-bit output
+ do_rdy	: OUT	STD_LOGIC   -- handshake signal output is ready
   );
-end RC5;
+end Simple_One;
 
-architecture Behavioral of RC5 is
+architecture Behavioral of Simple_One is
 --round counter
-SIGNAL din1: STD_LOGIC_VECTOR (47 DOWNTO 0);
---SIGNAL din2:  STD_LOGIC_VECTOR(14 DOWNTO 0);
+SIGNAL a_pre	: STD_LOGIC_VECTOR(31 DOWNTO 0);
+    --SIGNAL din2:  STD_LOGIC_VECTOR(14 DOWNTO 0);
 --SIGNAL din3: STD_LOGIC_VECTOR(14 DOWNTO 0);
 --SIGNAL din4:  STD_LOGIC_VECTOR(14 DOWNTO 0); 
 --SIGNAL din5:  STD_LOGIC_VECTOR(3 DOWNTO 0); 
-
+SIGNAL b_pre	: STD_LOGIC_VECTOR(31 DOWNTO 0);
+    
   SIGNAL i_cnt: STD_LOGIC_VECTOR(3 DOWNTO 0); 
   SIGNAL ab_xor: STD_LOGIC_VECTOR(31 DOWNTO 0);
   SIGNAL a_rot: STD_LOGIC_VECTOR(31 DOWNTO 0);
@@ -71,36 +75,45 @@ SIGNAL din1: STD_LOGIC_VECTOR (47 DOWNTO 0);
   SIGNAL b: STD_LOGIC_VECTOR(31 DOWNTO 0);
   --register to store value B
   SIGNAL b_reg: STD_LOGIC_VECTOR(31 DOWNTO 0); 
- -- SIGNAL dinFINAL: STD_LOGIC_VECTOR(63 DOWNTO 0);
+  SIGNAL dinFINAL: STD_LOGIC_VECTOR(63 DOWNTO 0);
   
 
 TYPE rom IS ARRAY (0 TO 25) OF STD_LOGIC_VECTOR(31 DOWNTO 0); 
 
-CONSTANT skey: rom:=rom'(  x"00000000", x"00000000", x"46F8E8C5", x"460C6085",
+CONSTANT skey: rom:=rom'( x"9BBBD8C8", x"1A37F7FB", x"46F8E8C5", x"460C6085",
 x"70F83B8A", x"284B8303", x"513E1454", x"F621ED22",
 x"3125065D", x"11A83A5D", x"D427686B", x"713AD82D",
 x"4B792F99", x"2799A4DD", x"A7901C49", x"DEDE871A",
 x"36C03196", x"A7EFC249", x"61A78BB8", x"3B0A1D2B",
 x"4DBFCA76", x"AE162167", x"30D76B0A", x"43192304",
-x"F6CC1431", x"65046380"); 
+x"F6CC1431", x"65046380");  -- "9BBBD8C8", x"1A37F7FB"
 
+-- Simple state machine
+TYPE  StateType IS (
+                    ST_IDLE, -- IDLE IDLE IDLE
+                    ST_PRE_ROUND, -- in this state simple pre-round op is performed 
+                    ST_ROUND_OP, -- in this state simple round op is performed. The state machine remains in this state for twelve clock cycles.
+                    ST_READY -- READY READY READY
+                    );
+   -- Simple state machine has four states: idle, pre_round, round and ready
+   SIGNAL  state:   StateType;
 
 begin
 --din1 <=(x"FFFFFFFFFFFF"); 
---PROCESS (clr)
---begin
---if (clr = '1') then dinFINAL <= (x"FFFFFFFFFFFF") & din;
+PROCESS (clr1)
+begin
+if (clr1 = '1') then dinFINAL <= din1 & din2;
 
---END IF;
---END PROCESS;
+END IF;
+END PROCESS;
     
- -- A=((A XOR B)<<<B) + S[2×i];
+ -- A=((A XOR B)<<<B) + S[2 * i];
  
 ab_xor <= a_reg XOR b_reg;
  
 WITH b_reg(4 DOWNTO 0) SELECT
   
- a_rot<=ab_xor(30 DOWNTO 0) & ab_xor(31) WHEN "00001",
+a_rot<=ab_xor(30 DOWNTO 0) & ab_xor(31) WHEN "00001",
      ab_xor(29 DOWNTO 0) & ab_xor(31 DOWNTO 30) WHEN "00010",
      ab_xor(28 DOWNTO 0) & ab_xor(31 DOWNTO 29) WHEN "00011",
      ab_xor(27 DOWNTO 0) & ab_xor(31 DOWNTO 28) WHEN "00100",
@@ -131,12 +144,13 @@ WITH b_reg(4 DOWNTO 0) SELECT
      ab_xor(2 DOWNTO 0) & ab_xor(31 DOWNTO 3) WHEN "11101",
      ab_xor(1 DOWNTO 0) & ab_xor(31 DOWNTO 2) WHEN "11110",
      ab_xor(0) & ab_xor(31 DOWNTO 1) WHEN "11111",             
-   ab_xor WHEN OTHERS;
+     ab_xor WHEN OTHERS;
  
+a_pre<=dinFINAL(63 DOWNTO 32) + skey(0); -- A = A + S[0]
 
-a<=a_rot + skey(CONV_INTEGER(i_cnt & '0')); --S[2×i]
+a<=a_rot + skey(CONV_INTEGER(i_cnt & '0')); --S[2?i]
 
-
+-- B =((A XOR B)<<<A) + S[ 2 * i + 1];
 ba_xor <= b_reg XOR a;
 
 WITH a(4 DOWNTO 0) SELECT
@@ -173,57 +187,74 @@ b_rot<=ba_xor(30 DOWNTO 0) & ba_xor(31) WHEN "00001",
 	ba_xor(1 DOWNTO 0) & ba_xor(31 DOWNTO 2) WHEN "11110",
 	ba_xor(0) & ba_xor(31 DOWNTO 1) WHEN "11111",          
     ba_xor WHEN OTHERS;
+    
+b_pre <= dinFINAL(31 DOWNTO 0) + skey(1);  -- B = B + S[1]
 
+b   <= b_rot+skey(CONV_INTEGER(i_cnt & '1'));--S[2?i+1]
 
-    b   <= b_rot+skey(CONV_INTEGER(i_cnt & '1'));--S[2×i+1]
-
-   -- a_reg
-PROCESS(clr, clk)  
+-- a_reg
+PROCESS(clr1, clk1)  
 BEGIN
- IF(clr='1') THEN a_reg <= dinFINAL(63 DOWNTO 32);
 
-ELSIF(clk'EVENT AND clk='1') THEN a_reg<=a;
+    IF(clr1='1') THEN
 
-END IF;
+        a_reg<=(OTHERS=>'0');
+        ELSIF(clk1'EVENT AND clk1='1') THEN
+
+        IF(state=ST_PRE_ROUND) THEN   a_reg<=a_pre;
+        ELSIF(state=ST_ROUND_OP) THEN   a_reg<=a;   END IF;
+
+     END IF;
 
 END PROCESS;
+    
 
--- b_reg
-   
-PROCESS(clr, clk)
+--B register
+PROCESS(clr1, clk1)
 BEGIN
-      
-IF(clr='1') THEN b_reg<=dinFINAL(31 DOWNTO 0);
-  
-    ELSIF(clk'EVENT AND clk='1') THEN b_reg<=b;
-   
-   END IF;
-  
-END PROCESS;   
+        IF(clr1='1') THEN
+           b_reg<=(OTHERS=>'0');
+        ELSIF(clk1'EVENT AND clk1='1') THEN
+           IF(state=ST_PRE_ROUND ) THEN   b_reg<=b_pre;
+          ELSIF(state=ST_ROUND_OP) THEN   b_reg<=b;   END IF;
+        END IF;
+END PROCESS;  
+
+PROCESS(clr1, clk1)
+   BEGIN
+      IF(clr1='1') THEN
+         state<=ST_IDLE;
+      ELSIF(clk1'EVENT AND clk1='1') THEN
+         CASE state IS
+            WHEN ST_IDLE=>  IF(di_vld='1') THEN state<=ST_PRE_ROUND;  END IF;
+            WHEN ST_PRE_ROUND=>    state <=ST_ROUND_OP;
+            WHEN ST_ROUND_OP=>  IF(i_cnt="1100") THEN state<=ST_READY;  END IF;
+            WHEN ST_READY=>   state<=ST_IDLE;
+         END CASE;
+      END IF;
+END PROCESS;
 
 -- 4 bit upcounter
-PROCESS(clr, clk) 
-
+PROCESS(clr1, clk1) 
 BEGIN
- IF(clr='1') THEN 
-   i_cnt<="0001";
 
-ELSIF(clk'EVENT AND clk='1') THEN
-    
- IF(i_cnt="1100") THEN
-       
-i_cnt<="0001";
-     
-ELSE
-        
-i_cnt<=i_cnt+'1';
-   
-  END IF;
-   
+IF(clr1='1') THEN 
+    i_cnt<="0001";
+ELSIF(clk1'EVENT AND clk1='1') THEN
+    IF(state=ST_ROUND_OP) THEN
+        IF(i_cnt="1100") THEN
+            i_cnt<="0001";
+        ELSE
+            i_cnt<=i_cnt+'1';
+    END IF;
+END IF;
 END IF;
 
 END PROCESS;
 
 dout<=a_reg & b_reg;
+WITH state SELECT
+        do_rdy<=	'1' WHEN ST_READY,     ---handshake signal
+		'0' WHEN OTHERS;
 
 end Behavioral;
