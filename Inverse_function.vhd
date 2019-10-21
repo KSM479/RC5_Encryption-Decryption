@@ -43,7 +43,7 @@ SIGNAL  state:   StateType;
 
 begin
 b_post<=b_reg - skey(1); -- A = A + S[0]
-b_subKey   <= b_reg-skey(CONV_INTEGER(i_cnt & '1'));--S[2×i+1]
+b_subKey   <= b_reg-skey(CONV_INTEGER(i_cnt & '1'));--S[2Ã—i+1]
 
 WITH a_reg(4 DOWNTO 0) SELECT
    
@@ -83,7 +83,7 @@ b_subKey(30 DOWNTO 0) & b_subKey(31) WHEN "11111",
 b <= b_rot XOR a_reg;
 
 a_post <= a_reg - skey(0);
-a_subKey<=a_reg - skey(CONV_INTEGER(i_cnt & '0')); --S[2×i]
+a_subKey<=a_reg - skey(CONV_INTEGER(i_cnt & '0')); --S[2Ã—i]
     
 WITH b(4 DOWNTO 0) SELECT
  a_rot<=a_subKey(0) & a_subKey(31 DOWNTO 1) WHEN "00001",
@@ -130,6 +130,15 @@ PROCESS(clr, clk)  BEGIN
         END IF;
     END PROCESS;
 
+          
+--********************************************************* INPUT ****************************************
+PROCESS(dinFINAL, di_vld)
+          begin
+            IF di_vld = '1' THEN 
+              a_reg <=  dinFINAL(63 DOWNTO 32);
+              b_reg <=  dinFINAL(31 DOWNTO 0);
+          END IF;
+END PROCESS;
 --********************************************************* b_reg*********************************************************
     PROCESS(clr, clk)  BEGIN
         IF(clr='0') THEN
