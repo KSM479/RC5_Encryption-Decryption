@@ -37,19 +37,11 @@ PORT  (
   clr1: IN STD_LOGIC;  -- asynchronous reset
 
   clk1: IN STD_LOGIC;  -- Clock signal
- --BTNU: IN STD_LOGIC;
- --BTNL: IN STD_LOGIC;
- --BTNR: IN STD_LOGIC;
- --BTND: IN STD_LOGIC;
- --TN: IN STD_LOGIC;
- -- din: IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+ 
   din1: IN STD_LOGIC_VECTOR(31 DOWNTO 0);
   din2:IN STD_LOGIC_VECTOR(31 DOWNTO 0);
   
   di_vld	: IN	STD_LOGIC;  -- handshake signal input is valid
-  --din3: IN STD_LOGIC_VECTOR(14 DOWNTO 0);
- -- din4: IN STD_LOGIC_VECTOR(14 DOWNTO 0); 
-  --din5: IN STD_LOGIC_VECTOR(3 DOWNTO 0);   --64-bit input
   dout: OUT STD_LOGIC_VECTOR(63 DOWNTO 0); --64-bit output
  do_rdy	: OUT	STD_LOGIC   -- handshake signal output is ready
   );
@@ -58,10 +50,6 @@ end Simple_One;
 architecture Behavioral of Simple_One is
 --round counter
 SIGNAL a_pre	: STD_LOGIC_VECTOR(31 DOWNTO 0);
-    --SIGNAL din2:  STD_LOGIC_VECTOR(14 DOWNTO 0);
---SIGNAL din3: STD_LOGIC_VECTOR(14 DOWNTO 0);
---SIGNAL din4:  STD_LOGIC_VECTOR(14 DOWNTO 0); 
---SIGNAL din5:  STD_LOGIC_VECTOR(3 DOWNTO 0); 
 SIGNAL b_pre	: STD_LOGIC_VECTOR(31 DOWNTO 0);
     
   SIGNAL i_cnt: STD_LOGIC_VECTOR(3 DOWNTO 0); 
@@ -99,14 +87,13 @@ TYPE  StateType IS (
    SIGNAL  state:   StateType;
 
 begin
---din1 <=(x"FFFFFFFFFFFF"); 
-PROCESS (clr1)
+PROCESS (din1, din2, di_vld)
 begin
-if (clr1 = '1') then dinFINAL <= din1 & din2;
+if (di_vld = '1') then dinFINAL <= din1 & din2;
 
 END IF;
 END PROCESS;
-    
+ 
  -- A=((A XOR B)<<<B) + S[2 * i];
  
 ab_xor <= a_reg XOR b_reg;
