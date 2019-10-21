@@ -123,7 +123,7 @@ a <= a_rot XOR b;
 --********************************************************* a_reg *********************************************************
 PROCESS(clr, clk)  BEGIN
         IF(clr='0') THEN
-           a_reg<=dinFINAL(63 DOWNTO 32);
+           
         ELSIF(clk'EVENT AND clk='1') THEN
             IF(state=ST_POST_ROUND) THEN   a_reg<=a_post;
            ELSIF(state=ST_ROUND_OP) THEN   a_reg<=a;   END IF;
@@ -142,7 +142,7 @@ END PROCESS;
 --********************************************************* b_reg*********************************************************
     PROCESS(clr, clk)  BEGIN
         IF(clr='0') THEN
-           b_reg<=dinFINAL(31 DOWNTO 0);
+     
         ELSIF(clk'EVENT AND clk='1') THEN
            IF(state=ST_POST_ROUND) THEN   b_reg<=b_post;
           ELSIF(state=ST_ROUND_OP) THEN   b_reg<=b;   END IF;
