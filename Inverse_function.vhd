@@ -43,7 +43,7 @@ SIGNAL  state:   StateType;
 
 begin
 b_post<=b_reg - skey(1); -- A = A + S[0]
-b_subKey   <= b_reg-skey(CONV_INTEGER(i_cnt & '1'));--S[2×i+1]
+b_subKey   <= b_reg-skey(CONV_INTEGER(i_cnt & '1'));--S[2�i+1]
 
 WITH a_reg(4 DOWNTO 0) SELECT
    
@@ -83,7 +83,7 @@ b_subKey(30 DOWNTO 0) & b_subKey(31) WHEN "11111",
 b <= b_rot XOR a_reg;
 
 a_post <= a_reg - skey(0);
-a_subKey<=a_reg - skey(CONV_INTEGER(i_cnt & '0')); --S[2×i]
+a_subKey<=a_reg - skey(CONV_INTEGER(i_cnt & '0')); --S[2�i]
     
 WITH b(4 DOWNTO 0) SELECT
  a_rot<=a_subKey(0) & a_subKey(31 DOWNTO 1) WHEN "00001",
@@ -122,29 +122,31 @@ WITH b(4 DOWNTO 0) SELECT
 a <= a_rot XOR b;
 --********************************************************* a_reg *********************************************************
 PROCESS(clr, clk)  BEGIN
-        IF(clr='0') THEN
-           
+        IF(clr='1') THEN
+           a_reg <= x"00000000";
         ELSIF(clk'EVENT AND clk='1') THEN
-            IF(state=ST_POST_ROUND) THEN   a_reg<=a_post;
+            IF(di_vld ='1') THEN a_reg <=  dinFINAL(63 DOWNTO 32);
+          ELSIF(state=ST_POST_ROUND) THEN   a_reg<=a_post;
            ELSIF(state=ST_ROUND_OP) THEN   a_reg<=a;   END IF;
         END IF;
     END PROCESS;
 
           
 --********************************************************* INPUT ****************************************
-PROCESS(dinFINAL, di_vld)
-          begin
-            IF di_vld = '1' THEN 
-              a_reg <=  dinFINAL(63 DOWNTO 32);
-              b_reg <=  dinFINAL(31 DOWNTO 0);
-          END IF;
-END PROCESS;
+--PROCESS(dinFINAL, di_vld)
+--          begin
+--            IF di_vld = '1' THEN 
+--              a_reg <=  dinFINAL(63 DOWNTO 32);
+--              b_reg <=  dinFINAL(31 DOWNTO 0);
+--          END IF;
+--END PROCESS;
 --********************************************************* b_reg*********************************************************
     PROCESS(clr, clk)  BEGIN
-        IF(clr='0') THEN
-     
+        IF(clr='1') THEN
+     b_reg <= x"00000000";
         ELSIF(clk'EVENT AND clk='1') THEN
-           IF(state=ST_POST_ROUND) THEN   b_reg<=b_post;
+          IF(di_vld ='1') THEN b_reg <=  dinFINAL(31 DOWNTO 0);
+          ELSIF(state=ST_POST_ROUND) THEN   b_reg<=b_post;
           ELSIF(state=ST_ROUND_OP) THEN   b_reg<=b;   END IF;
         END IF;
     END PROCESS;   
@@ -152,7 +154,7 @@ END PROCESS;
 -- *********************************************************4 bit upcounter*********************************************************
 PROCESS(clr, clk)
    BEGIN
-      IF(clr='0') THEN
+      IF(clr='1') THEN
          state<=ST_IDLE;
       ELSIF(clk'EVENT AND clk='1') THEN
          CASE state IS
@@ -166,7 +168,7 @@ PROCESS(clr, clk)
 
 -- round counter
     PROCESS(clr, clk)  BEGIN
-        IF(clr='0') THEN
+        IF(clr='1') THEN
            i_cnt<="1100";
         ELSIF(clk'EVENT AND clk='1') THEN
            IF(state=ST_POST_ROUND) THEN
